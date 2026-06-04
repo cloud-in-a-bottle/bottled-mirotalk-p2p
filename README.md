@@ -77,15 +77,17 @@ set `HOST_USER_AUTH=true`.
 When the app is deployed on OpenHost and the zone owner is already
 logged in to their zone, they do **not** need to log in to MiroTalk
 separately. A small Express middleware (`app/src/openhost-shim.js`,
-injected into `server.js` at image build time) verifies the
-`zone_auth` cookie that OpenHost's router forwards from owner
-browsers. The cookie is an RS256-signed JWT; we fetch the router's
-public key from `{OPENHOST_ROUTER_URL}/.well-known/jwks.json` at
-startup and cache it for 10 minutes.
+injected into `server.js` at image build time) reads the
+`X-OpenHost-Is-Owner: true` header that the OpenHost router injects
+on every proxied request from the zone owner. The router strips any
+client-supplied copy of this header before forwarding (all
+`X-OpenHost-*` headers are dropped in `proxy.py` before the
+router's own value is added), so the header is safe to trust as the
+sole authority on owner identity.
 
 #### Owner flow
 
-When the cookie verifies and `claims.sub === "owner"`, the shim:
+When `X-OpenHost-Is-Owner: true` is present, the shim:
 
 * adds the owner's IP to MiroTalk's in-memory `authHost` allowlist
   on first request, so `isAuthorizedIP` returns true,
@@ -99,12 +101,12 @@ When the cookie verifies and `claims.sub === "owner"`, the shim:
 #### Non-owner flow
 
 When a browser (i.e. a request with `Accept: text/html`) hits
-`/`, `/newcall`, or `/login` **without** a valid owner cookie, the
+`/`, `/newcall`, or `/login` **without** the owner header, the
 shim redirects it to `https://<OPENHOST_ZONE_DOMAIN>/login`. The
 user authenticates against their OpenHost zone once and is then
-treated as the owner on return. This matches the `plane.so`
-packaging's approach of never exposing the app's native login UI
-to end users in an OpenHost deployment.
+treated as the owner on return. This matches the approach of never
+exposing the app's native login UI to end users in an OpenHost
+deployment.
 
 Programmatic clients (`Accept: application/json`, curl without an
 HTML accept, etc.) are not redirected -- they fall through to
@@ -121,19 +123,6 @@ host authentication. Anyone with a room URL can enter the room as
 a regular participant without any login, matching MiroTalk's
 `isAllowedRoomAccess` semantics (rooms that already exist let any
 visitor in).
-
-#### Why cookie, not header
-
-The shim deliberately does **not** trust the `X-OpenHost-Is-Owner`
-request header that the OpenHost router *also* sets on owner
-requests: the current router forwards client-supplied copies of
-that header unchanged on non-owner requests
-(`openhost/compute_space/compute_space/web/routes/proxy.py`), so
-it can be trivially spoofed. The `zone_auth` cookie is a signed
-JWT, so the shim accepts no claim of owner identity without a
-valid RS256 signature from the router's private key. Host-
-protection and the auto-generated admin password (used for
-programmatic access or non-OpenHost deployments) also still work.
 
 ## STUN / TURN
 
