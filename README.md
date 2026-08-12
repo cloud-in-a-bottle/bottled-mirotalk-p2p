@@ -1,7 +1,7 @@
-# openhost-mirotalk-p2p
+# bottled-mirotalk-p2p
 
 [MiroTalk P2P](https://github.com/miroslavpejic85/mirotalk) packaged
-as an OpenHost app.
+as a Cloud in a Bottle app.
 
 Peer-to-peer WebRTC video conferencing. The server handles signaling
 only (socket.io over WebSocket on a single HTTP port); browsers
@@ -72,13 +72,13 @@ If you want to disable host gating and let anyone become host, set
 If you want to require login to *enter* a room (not just claim host),
 set `HOST_USER_AUTH=true`.
 
-### OpenHost auth shim
+### Cloud in a Bottle auth shim
 
-When the app is deployed on OpenHost and the zone owner is already
+When the app is deployed on Cloud in a Bottle and the zone owner is already
 logged in to their zone, they do **not** need to log in to MiroTalk
 separately. A small Express middleware (`app/src/openhost-shim.js`,
 injected into `server.js` at image build time) reads the
-`X-OpenHost-Is-Owner: true` header that the OpenHost router injects
+`X-OpenHost-Is-Owner: true` header that the Cloud in a Bottle router injects
 on every proxied request from the zone owner. The router strips any
 client-supplied copy of this header before forwarding (all
 `X-OpenHost-*` headers are dropped in `proxy.py` before the
@@ -103,16 +103,16 @@ When `X-OpenHost-Is-Owner: true` is present, the shim:
 When a browser (i.e. a request with `Accept: text/html`) hits
 `/`, `/newcall`, or `/login` **without** the owner header, the
 shim redirects it to `https://<OPENHOST_ZONE_DOMAIN>/login`. The
-user authenticates against their OpenHost zone once and is then
+user authenticates against their Cloud in a Bottle zone once and is then
 treated as the owner on return. This matches the approach of never
-exposing the app's native login UI to end users in an OpenHost
+exposing the app's native login UI to end users in a Cloud in a Bottle
 deployment.
 
 Programmatic clients (`Accept: application/json`, curl without an
 HTML accept, etc.) are not redirected -- they fall through to
 MiroTalk's native `/login` handler, so scripts that want to use
 the admin credentials directly still work. This also covers the
-case where the app is run outside OpenHost (e.g. local
+case where the app is run outside Cloud in a Bottle (e.g. local
 development) and `OPENHOST_ZONE_DOMAIN` is unset.
 
 #### Guests can still join rooms
