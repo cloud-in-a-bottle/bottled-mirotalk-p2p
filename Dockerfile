@@ -97,7 +97,9 @@ ENV NODE_ENV=production \
     STATS_ENABLED=false \
     NGROK_ENABLED=false \
     HOST_PROTECTED=true \
-    HOST_USER_AUTH=false
+    HOST_USER_AUTH=false \
+    REDIRECT_ENABLED=true \
+    REDIRECT_URL="/leave"
 
 ENTRYPOINT ["/sbin/tini", "--", "/usr/local/bin/openhost-entrypoint"]
 CMD ["node", "app/src/server.js"]

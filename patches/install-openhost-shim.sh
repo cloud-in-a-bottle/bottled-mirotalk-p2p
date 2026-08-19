@@ -1,8 +1,7 @@
 #!/bin/sh
-# Installs the OpenHost auth shim into MiroTalk's server.js at image
-# build time.
+# Patches MiroTalk's server.js at image build time.
 #
-# Two patches:
+# Three patches:
 #
 #   1. Copy our openhost-shim.js module next to the server so
 #      `require('./openhost-shim')` resolves from server.js.
@@ -13,6 +12,14 @@
 #      middleware is fully set up but before any user-visible
 #      route handlers, so our pre-empt routes (`/`, `/newcall`,
 #      `/logged`) win against the stock ones.
+#
+#   3. Redact the startup "Server config" dump. Upstream MiroTalk
+#      logs its ENTIRE config object at log.info on every boot
+#      (`log.info('Server config', getServerConfig(...))`), which
+#      includes JWT_KEY, api_key_secret, and the HOST_USERS admin
+#      password. OpenHost surfaces container stdout as the
+#      owner-facing app log, so that dumps secrets into the logs.
+#      We drop the config argument so only a bland marker is logged.
 #
 # The patch is idempotent: re-running it doesn't double-inject.
 
@@ -76,11 +83,29 @@ if (original.includes('openhost-shim')) {
     console.log('[install-openhost-shim] already patched');
     process.exit(0);
 }
-const patched = original.replace(anchor, snippet + anchor);
+let patched = original.replace(anchor, snippet + anchor);
 if (patched === original) {
-    console.error('[install-openhost-shim] replacement did not apply');
+    console.error('[install-openhost-shim] shim injection did not apply');
     process.exit(1);
 }
+
+// Redact the "Server config" startup dump (it prints JWT_KEY,
+// api_key_secret, and the HOST_USERS admin password to stdout).
+const configLogRe = /log\.info\('Server config', getServerConfig\([^)]*\)\);/g;
+const nConfigLogs = (patched.match(configLogRe) || []).length;
+if (nConfigLogs > 0) {
+    patched = patched.replace(
+        configLogRe,
+        "log.info('Server config loaded (object omitted by openhost: it contains secrets)');",
+    );
+    console.log('[install-openhost-shim] redacted ' + nConfigLogs + ' Server config log(s)');
+} else {
+    // Non-fatal: upstream may have changed the log call. Warn loudly
+    // so the leak doesn't silently return on an upstream bump.
+    console.error('[install-openhost-shim] WARNING: no "Server config" log found to redact; '
+        + 'verify server.js no longer dumps secrets to stdout after an upstream bump');
+}
+
 fs.writeFileSync(file, patched);
 console.log('[install-openhost-shim] patched server.js');
 NODE

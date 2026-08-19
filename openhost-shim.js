@@ -132,5 +132,42 @@ module.exports = function installOpenhostShim({ app, hostCfg, authHost, log, get
         });
     }
 
+    // --- public "you have left the meeting" page ---
+    //
+    // MiroTalk sends everyone to REDIRECT_URL (default /newcall) when
+    // they hang up. In an OpenHost deployment /newcall is owner-gated,
+    // so a guest who leaves a call gets bounced to the zone login page
+    // they can't use. We point REDIRECT_URL at this public /leave page
+    // instead (see the Dockerfile ENV), so guests land somewhere sane.
+    // MiroTalk has no /leave route of its own, so this is purely
+    // additive and never gated.
+    const LEAVE_HTML = `<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>You've left the meeting</title>
+<style>
+  html,body{height:100%;margin:0}
+  body{display:flex;align-items:center;justify-content:center;
+       font-family:system-ui,-apple-system,sans-serif;
+       background:#111827;color:#e5e7eb;text-align:center;padding:1.5rem}
+  .card{max-width:28rem}
+  h1{font-size:1.5rem;margin:0 0 .5rem}
+  p{color:#9ca3af;line-height:1.5;margin:.25rem 0}
+</style>
+</head><body>
+<div class="card">
+  <h1>You've left the meeting</h1>
+  <p>Thanks for joining. You can safely close this tab.</p>
+  <p>To rejoin, open the meeting link again.</p>
+</div>
+</body></html>`;
+
+    app.get('/leave', (req, res) => {
+        res.set('Content-Type', 'text/html; charset=utf-8');
+        res.set('Cache-Control', 'no-store');
+        res.send(LEAVE_HTML);
+    });
+
     log.info('[openhost-shim] installed; owner auto-auth active via X-OpenHost-Is-Owner header');
 };
