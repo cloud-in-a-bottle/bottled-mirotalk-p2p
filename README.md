@@ -191,5 +191,4 @@ corresponding secrets.
 
 ## Licensing
 
-MiroTalk is AGPL-3.0. This wrapper is distributed under the same
-terms.
+MiroTalk remains AGPL-3.0; its license text is retained in [LICENSE](LICENSE). The original Cloud in a Bottle packaging and integration code in this repository, including the entrypoint, shim, patch-installation script, Dockerfile, manifest, and documentation, is available under the [MIT License](LICENSE.packaging). Upstream MiroTalk code, copied or adapted upstream material, and third-party components retain their own licenses and copyright notices.
