@@ -12,13 +12,13 @@
 # a committed self-signed TLS cert that httpolyglot reads at boot --
 # we include that same cert in our image via the git clone.
 
-# Pin upstream to a known-good commit (2026-04-22). Bump as needed.
-ARG MIROTALK_REF=627e9299c15f302236864f9cdf020d1df298ebc8
+# Pin upstream to a known-good commit (2026-10-19, package version 2.1.78). Bump as needed.
+ARG MIROTALK_REF=65869e84537c2634e2c2ed47f0b71ed742da5663
 
 # ------------------------------------------------------------ builder
 # Clone + install npm deps in a throwaway stage so the final image
 # doesn't include git or build metadata.
-FROM node:22-alpine AS builder
+FROM node:24-alpine AS builder
 
 ARG MIROTALK_REF
 RUN apk add --no-cache git ca-certificates
@@ -40,7 +40,7 @@ RUN npm ci --only=production --no-audit --no-fund --loglevel=warn
 RUN cp app/src/config.template.js app/src/config.js
 
 # ------------------------------------------------------------ runtime
-FROM node:22-alpine
+FROM node:24-alpine
 
 # tini gives us a proper pid-1 so signals (SIGTERM from OpenHost on
 # stop/reload) propagate cleanly to node and it exits 0 instead of
