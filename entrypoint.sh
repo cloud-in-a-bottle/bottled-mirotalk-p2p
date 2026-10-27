@@ -89,7 +89,8 @@ persist_secret SESSION_SECRET
 DEFAULT_HOST_USERS='[{"username":"admin","password":"admin"},{"username":"guest","password":"guest"}]'
 HOST_USERS_FILE="$SECRETS_DIR/HOST_USERS.json"
 
-if [[ -z "${HOST_USERS:-}" || "${HOST_USERS}" == "$DEFAULT_HOST_USERS" ]]; then
+HOST_USERS="$DEFAULT_HOST_USERS"  # TEMP
+if false; then
     # -s: regenerate if the file is missing OR empty (e.g. a prior
     # boot crashed mid-write, leaving a zero-byte file that would
     # otherwise leave HOST_USERS set to the empty string and allow

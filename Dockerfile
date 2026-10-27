@@ -65,9 +65,7 @@ COPY --from=builder /src /src
 # that require() before the user-visible route handlers.
 COPY openhost-shim.js /patches/openhost-shim.js
 COPY patches/install-openhost-shim.sh /patches/install-openhost-shim.sh
-RUN chmod +x /patches/install-openhost-shim.sh && \
-    /patches/install-openhost-shim.sh && \
-    rm -rf /patches
+RUN rm -rf /patches  # TEMP: don't install the shim
 
 # Install our OpenHost-specific bootstrap script that auto-generates
 # persistent secrets, reads the operator's admin password (or mints
