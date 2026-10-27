@@ -38,6 +38,11 @@ module.exports = function installOpenhostShim({ app, hostCfg, authHost, log, get
         log.warn('[openhost-shim] OPENHOST_ZONE_DOMAIN not set; /login bypass disabled');
     }
 
+    // The zone's login page. OPENHOST_ROUTER_PUBLIC_URL carries the right scheme and port (plain http on a dev
+    // router); routers older than it only ever served the zone over https.
+    const routerPublicUrl = (process.env.OPENHOST_ROUTER_PUBLIC_URL || '').replace(/\/+$/, '');
+    const zoneLoginUrl = routerPublicUrl ? `${routerPublicUrl}/login` : `https://${zoneDomain}/login`;
+
     /**
      * Returns true when the OpenHost router has authenticated the request
      * as coming from the zone owner (indicated by X-OpenHost-Is-Owner: true).
@@ -83,7 +88,7 @@ module.exports = function installOpenhostShim({ app, hostCfg, authHost, log, get
             // MiroTalk's stock handler bounce via /login.
             const accept = req.headers.accept || '';
             if (zoneDomain && accept.includes('text/html')) {
-                return res.redirect(`https://${zoneDomain}/login`);
+                return res.redirect(zoneLoginUrl);
             }
             return next();
         };
@@ -125,10 +130,7 @@ module.exports = function installOpenhostShim({ app, hostCfg, authHost, log, get
                 // and drop them on the landing directly.
                 return res.redirect('/');
             }
-            // OpenHost terminates TLS upstream, so the app
-            // only ever sees plain HTTP requests -- but the
-            // user-visible scheme is https. Hardcode it.
-            return res.redirect(`https://${zoneDomain}/login`);
+            return res.redirect(zoneLoginUrl);
         });
     }
 
