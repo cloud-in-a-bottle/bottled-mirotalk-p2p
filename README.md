@@ -8,6 +8,8 @@ only (socket.io over WebSocket on a single HTTP port); browsers
 establish direct `RTCPeerConnection`s to each other and media flows
 browser-to-browser without ever touching the server.
 
+`cloudinabottle.toml` sets `prebuilt_image`, so Cloud in a Bottle pulls our signed prebuilt image (built by CI from each release tag) instead of building the Dockerfile. To fork and modify this app, comment out `prebuilt_image` so your instance builds from source.
+
 ## What you get
 
 - `https://<app>.<your-openhost-host>/` — pick or generate a room
