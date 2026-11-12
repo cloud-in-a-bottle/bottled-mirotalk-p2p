@@ -1,6 +1,6 @@
 [app]
 name = "mirotalk-p2p"
-version = "1.0.0"
+version = "1.1.0"
 description = "Self-hosted peer-to-peer WebRTC video conferencing (no SFU, browsers connect directly)."
 
 [runtime.container]

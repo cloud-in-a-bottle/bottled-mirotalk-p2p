@@ -12,8 +12,8 @@
 # a committed self-signed TLS cert that httpolyglot reads at boot --
 # we include that same cert in our image via the git clone.
 
-# Pin upstream to a known-good commit (2026-10-19, package version 2.1.78). Bump as needed.
-ARG MIROTALK_REF=65869e84537c2634e2c2ed47f0b71ed742da5663
+# Pin upstream to a known-good commit (2026-11-05, package version 2.2.62). Bump as needed.
+ARG MIROTALK_REF=be5e6fd980da1fce335ab95028cc17e1b0567d63
 
 # ------------------------------------------------------------ builder
 # Clone + install npm deps in a throwaway stage so the final image
