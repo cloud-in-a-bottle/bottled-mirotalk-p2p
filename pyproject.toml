@@ -7,6 +7,7 @@ requires-python = "==3.12.*"
 [dependency-groups]
 dev = [
     "openhost[test-harness] @ git+https://github.com/cloud-in-a-bottle/cloud-in-a-bottle@main",
+    "python-socketio[client]>=5.11",
 ]
 
 [tool.uv]
