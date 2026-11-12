@@ -7,7 +7,7 @@
 #      `require('./openhost-shim')` resolves from server.js.
 #
 #   2. Insert `require('./openhost-shim')({app, hostCfg, authHost,
-#      log, getIP, htmlInjector, views, OIDC})` right before the
+#      log, getIP, htmlInjector, views, OIDC, encodeToken})` right before the
 #      `/profile` route registration -- that's after the OIDC
 #      middleware is fully set up but before any user-visible
 #      route handlers, so our pre-empt routes (`/`, `/newcall`,
@@ -76,6 +76,7 @@ require('./openhost-shim')({
     htmlInjector,
     views,
     OIDC,
+    encodeToken,
 });
 
 `;

@@ -20,6 +20,10 @@
  *     false and redirect to `/login` otherwise.
  *   * Register passthrough handlers for `/`, `/newcall`, `/logged`
  *     that skip MiroTalk's login redirect for owners.
+ *   * Hand the owner's room page a host `peer_token`, the JWT that
+ *     MiroTalk's login form would have stored. With host protection
+ *     on, the socket.io `join` that opens a new room is refused
+ *     without one, so the owner couldn't start a meeting.
  *
  * Guests (non-owner visitors) are unaffected. They can still join
  * rooms via direct URLs -- MiroTalk's `isAllowedRoomAccess` logic
@@ -28,7 +32,7 @@
 
 const IS_OWNER_HEADER = 'x-openhost-is-owner';
 
-module.exports = function installOpenhostShim({ app, hostCfg, authHost, log, getIP, htmlInjector, views, OIDC }) {
+module.exports = function installOpenhostShim({ app, hostCfg, authHost, log, getIP, htmlInjector, views, OIDC, encodeToken }) {
     // Zone domain is used for redirect targets when non-owner
     // browsers hit protected endpoints (/, /newcall, /login). If
     // it's unset we fall back to MiroTalk's native /login page.
@@ -93,6 +97,45 @@ module.exports = function installOpenhostShim({ app, hostCfg, authHost, log, get
             return next();
         };
     }
+
+    // --- host token for the owner's room page ---
+    //
+    // MiroTalk's client reads `sessionStorage.peer_token` (set by its
+    // login form) and sends it with the socket.io `join`. The server
+    // refuses a join that opens a new room on a protected host
+    // without a valid token, and the token names a HOST_USERS login.
+    // The owner never sees that form, so for owner page loads of
+    // /join we put a presenter token for the generated host login
+    // into the page, the same token the form would have stored.
+    // Guests never get one: they can only join rooms the owner has
+    // opened.
+    function hostUser() {
+        const users = Array.isArray(hostCfg.users) ? hostCfg.users : [];
+        const user = users.find((u) => {
+            const rooms = u && u.allowed_rooms;
+            return !rooms || (Array.isArray(rooms) && rooms.includes('*'));
+        });
+        if (!user) throw new Error('[openhost-shim] no HOST_USERS login is allowed in every room');
+        return user;
+    }
+
+    app.use((req, res, next) => {
+        if (OIDC.enabled || !hostCfg.protected) return next();
+        if (!isOwner(req) || req.method !== 'GET') return next();
+        if (req.path !== '/join' && !req.path.startsWith('/join/')) return next();
+        const { username, password } = hostUser();
+        const token = encodeToken({ username, password, presenter: true });
+        const script = `<script>try { window.sessionStorage.setItem('peer_token', ${JSON.stringify(token)}); } catch (e) {}</script>`;
+        const send = res.send.bind(res);
+        res.send = (body) => {
+            if (typeof body === 'string' && body.includes('</head>')) {
+                res.set('Cache-Control', 'no-store');
+                body = body.replace('</head>', `${script}</head>`);
+            }
+            return send(body);
+        };
+        next();
+    });
 
     app.get('/', ownerAwareRender('landing'));
     app.get('/newcall', ownerAwareRender('newCall'));
